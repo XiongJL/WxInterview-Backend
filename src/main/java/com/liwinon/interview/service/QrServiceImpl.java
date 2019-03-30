@@ -62,13 +62,15 @@ public class QrServiceImpl implements QrService{
 		iv.setCodeInfo(url);
 		ivDao.save(iv);
 		System.out.println("url:"+url);
-		// 在缓存中创建一个队列来保存面试者信息
+		/** 在缓存中创建一个队列来保存面试者信息*/
 		Cache cache = new Cache();
 		cache.setForever(true);
 		cache.setKey(ivid);
 		Queue queue = new Queue();  //创建一个空队列
 		cache.setValue(queue);
 		CacheManager.putCache(ivid, cache); //保存缓存
+		System.out.println("缓存大小："+CacheManager.getCacheSize());
+		System.out.println("缓存对象Value："+CacheManager.getCacheInfo(ivid).getValue());
 		try {
 			QrCodeCreateUtil.createQRCode(url, Path, 300, 300);
 			return qrName; //返回二维码图片名字
@@ -92,7 +94,7 @@ public class QrServiceImpl implements QrService{
 		member.setOpenid(openid);
 		member.setPublishDate(Utils.nowDate());
 		//设置当前面试的队列
-		/**发起面试时就会创建一个缓存来保存queue*/
+		/**发起面试时就会创建一个缓存来保存queue,用户参加时查看是否存在,不存在说明,面试已结束*/
 		if(CacheManager.hasCache(ivid)) {  //如果存在此次面试  
 			Cache cache = CacheManager.getCache(ivid);
 			Queue me = (Queue)cache.getValue();   // 获取存在的队列值.

@@ -65,5 +65,12 @@ public class Cache {
   
         public void setExpired(boolean b) {   
                 expired = b;   
-        }   
+        }
+
+		@Override
+		public String toString() {
+			return "Cache [key=" + key + ", value=" + value + ", isForever=" + isForever + ", timeOut=" + timeOut
+					+ ", expired=" + expired + "]";
+		}   
+        
 }

@@ -1,5 +1,7 @@
 package com.liwinon.interview.controller;
 
+import java.util.regex.Pattern;
+
 import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +26,7 @@ public class UserController {
 	@Transactional
 	@PostMapping(value="/interview/api/login")
 	public String login(@RequestParam("session")String session,@RequestParam("password")String pwd) {
-		System.out.println(pwd);
+		System.out.println("输入的密码:"+pwd);
 		String password = pwd.replaceAll("'", "");  //防止注入,前端也有,密码不能输入 ' 
 		String openid = sessionDao.findBySessionKey(session).getOpenId();
 		Ivuser user = userDao.findByOpenid(openid);
@@ -77,5 +79,27 @@ public class UserController {
 			//sessionKey不存在，或已失效，需要重新进入小程序建立会话
 			return "sessionERR";
 		}
+	}
+	
+	@GetMapping(value="/interview/changeName")
+	public String changeName(String session_key,String userName) {
+		//防止SQL注入
+		if(!Pattern.matches("^[0-9a-zA-Z\\u4e00-\\u9fa5]+$", userName)) {
+			return "regex";
+		}
+		Session table = sessionDao.findBySessionKey(session_key);
+		if(table!=null) {  //存在此session_key
+			Ivuser user = userDao.findByOpenid(table.getOpenId());
+			if(user==null)    //说明还没有保存过此用户 ， 基本不可能进入这个方法，除非手动删除数据库user表
+				user = new Ivuser();
+			user.setName(userName);
+			userDao.save(user);
+			return "ok";  //保存用户成功！
+			
+		}else {
+			//sessionKey不存在，或已失效，需要重新进入小程序建立会话
+			return "sessionERR";
+		}
+		
 	}
 }

@@ -22,9 +22,9 @@ public class Ivmember {
 	@Id
 	private String openid;
 	//0(面试者 默认) 1(面试官) 2(被邀请成为面试官) 3(拒绝成为面试官)
-	private int type;
+	private int type = 0 ;
 	//0(未报名)1(已报名 默认)2(面试进行中)3(面试完毕)
-	private int state;
+	private int state = 1 ;
 	//扫描参加时间
 	@DateTimeFormat(pattern = "yyyy-MM-dd hh:mm:ss")
 	private Date publishDate;
@@ -58,6 +58,46 @@ public class Ivmember {
 	}
 	public void setState(int state) {
 		this.state = state;
+	}
+	
+	
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ivId;
+		result = prime * result + ((openid == null) ? 0 : openid.hashCode());
+		result = prime * result + ((publishDate == null) ? 0 : publishDate.hashCode());
+		result = prime * result + state;
+		result = prime * result + type;
+		return result;
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Ivmember other = (Ivmember) obj;
+		if (ivId != other.ivId)
+			return false;
+		if (openid == null) {
+			if (other.openid != null)
+				return false;
+		} else if (!openid.equals(other.openid))
+			return false;
+		if (publishDate == null) {
+			if (other.publishDate != null)
+				return false;
+		} else if (!publishDate.equals(other.publishDate))
+			return false;
+		if (state != other.state)
+			return false;
+		if (type != other.type)
+			return false;
+		return true;
 	}
 	@Override
 	public String toString() {

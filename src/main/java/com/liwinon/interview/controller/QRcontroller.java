@@ -45,7 +45,10 @@ public class QRcontroller {
 	/**获取前面的人数*/
 	@GetMapping(value="/interview/api/HowManyFront")
 	public String HowManyFront(String ivid,String session) {
-		
+		if(ivid==null||ivid=="") {
+			System.out.println("HowManyFront 获取到的ivid是空!");
+			return null;
+		}
 		return qrcode.howManyFront(ivid,session);
 		
 	}

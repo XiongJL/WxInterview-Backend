@@ -109,5 +109,11 @@ public class Interview {
 	public void setCodeImg(String codeImg) {
 		this.codeImg = codeImg;
 	}
+	@Override
+	public String toString() {
+		return "Interview [ivId=" + ivId + ", openid=" + openid + ", location=" + location + ", publishTime="
+				+ publishTime + ", startTime=" + startTime + ", duringTime=" + duringTime + ", codeInfo=" + codeInfo
+				+ ", codeImg=" + codeImg + ", ivType=" + ivType + "]";
+	}
 	
 }

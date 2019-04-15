@@ -13,9 +13,11 @@ import org.springframework.stereotype.Service;
 import com.google.zxing.WriterException;
 import com.liwinon.interview.dao.InterviewDao;
 import com.liwinon.interview.dao.IvmemberDao;
+import com.liwinon.interview.dao.IvuserDao;
 import com.liwinon.interview.dao.SessionDao;
 import com.liwinon.interview.entity.Interview;
 import com.liwinon.interview.entity.Ivmember;
+import com.liwinon.interview.entity.Ivuser;
 import com.liwinon.interview.utils.Cache;
 import com.liwinon.interview.utils.CacheManager;
 import com.liwinon.interview.utils.QrCodeCreateUtil;
@@ -29,8 +31,10 @@ public class QrServiceImpl implements QrService{
 	SessionDao sessionDao;
 	@Autowired
 	IvmemberDao memberDao; 
-	private static final String URL = "https://localhost/interview/qrCode/addInterview";
-//	private static final String URL = ""https://mesqrcode.liwinon.com/interview/qrCode/addInterview";
+	@Autowired
+	IvuserDao userDao;
+//	private static final String URL = "https://localhost/interview/qrCode/addInterview";
+	private static final String URL = "https://mesqrcode.liwinon.com/interview/qrCode/addInterview";
 	
 	/** 业务方法:
 	 * 	发起一场面试
@@ -68,7 +72,7 @@ public class QrServiceImpl implements QrService{
 		ivDao.save(iv);
 		System.out.println("url:"+url);
 		/** 在缓存中创建一个队列来保存面试者信息*/
-		createQueue(ivid);
+		createQueue(ivid,true);
 		System.out.println("缓存大小："+CacheManager.getCacheSize());
 		System.out.println("缓存对象Value："+CacheManager.getCacheInfo(ivid).getValue());
 		try {
@@ -96,7 +100,7 @@ public class QrServiceImpl implements QrService{
 		if(query!=null && query.getIvType()!=2) {  //如果存在此次面试,且面试未结束
 			//如果没有此次面试信息!说明服务器重启了,重新创建缓存队列
 			if(CacheManager.getCache(ivid)==null) {  
-				createQueue(ivid);
+				createQueue(ivid,true);
 			}
 			Cache cache = CacheManager.getCache(ivid);  
 			System.out.println("查询的缓存:"+cache);
@@ -104,10 +108,12 @@ public class QrServiceImpl implements QrService{
 			/**判断队列中是否已经存在该用户.根据业务情况考虑是否需要更换方式*/
 			if(me.getNum()>0) {
 				Object[] arrs = me.getQueueList();
-				
+				System.out.println("join queue's value: "+ arrs.toString());
 				for(Object mem : arrs) {
 					Ivmember m = (Ivmember)mem;
 					System.out.println("转换的对象"+m);
+					if(m==null||m.getOpenid()=="")
+						break;
 					if(m.getOpenid().equals(openid)) {
 						return "exist"; //已参加过此次面试
 					}
@@ -137,14 +143,21 @@ public class QrServiceImpl implements QrService{
 	 * 	在缓存中创建一个队列来保存面试者信息
 	 * 	
 	 * @param ivid 面试场次id
+	 * @param isAll true 查询所有人, false 只查询尚未面试,或面试进行中的人
 	 */
-	public void createQueue(String ivid) {
+	public void createQueue(String ivid,boolean isAll) {
 		Cache cache = new Cache();
 		cache.setForever(true);
 		cache.setKey(ivid);
 		Queue queue = new Queue();  //创建一个空队列
 		/**查询数据库此次面试是否已经有人参加,防止服务器重启后丢失缓存造成重复添加**/
-		List<Ivmember> list = memberDao.findByIvId(Integer.valueOf(ivid));
+		
+		List<Ivmember> list = null;
+		if(isAll) {
+			list = memberDao.findAllByIvId(Integer.valueOf(ivid));
+		}else {
+			list = memberDao.findIngByIvId(Integer.valueOf(ivid));
+		}
 		if(list.size()>0) {
 			for(Ivmember member : list) {   //如果存在参加的面试则入队, 顺序根据扫描时间.
 				System.out.println("PublishDate: "+member.getPublishDate());
@@ -158,6 +171,7 @@ public class QrServiceImpl implements QrService{
 	/**判断是否参加了一场面试*/
 	@Override
 	public List<Interview> didJion(String session) {
+		System.out.println("DidJion GET SESSION is:"+session);
 		String openid = sessionDao.findBySessionKey(session).getOpenId();
 		List<Ivmember> list = memberDao.findByOpenidWithIVING(openid);
 		List<Interview> results = new ArrayList<Interview>();
@@ -170,11 +184,97 @@ public class QrServiceImpl implements QrService{
 	/**判断前面还有多少个人*/
 	@Override
 	public String howManyFront(String ivid,String session) {
+		if(CacheManager.getCache(ivid)==null) {  
+			System.out.println("队列不存在, 准备创建队列.");
+			createQueue(ivid,false);
+		}
+		System.out.println("howManyFornt GET session is :"+session);
 		String openid = sessionDao.findBySessionKey(session).getOpenId();
 		Cache cache = CacheManager.getCache(ivid);  
 		Queue me = (Queue)cache.getValue();   // 获取存在的队列值.
 		int id = Integer.valueOf(ivid);
 		Ivmember iv = memberDao.findByividAndOpenid(id,openid);
 		return String.valueOf(me.getYourFront(iv));
+	}
+	/**
+	 * 	查询面试进行和未开始的.
+	 */
+	@Override
+	public List<Interview> getInterview() {
+		System.out.println("查询可操作性的面试信息");
+//		List<Interview>list = ivDao.findByIvType();
+//		for(Interview i : list) {
+//			System.out.println(i);
+//		}
+		return ivDao.findByIvType();
+	}
+	/**
+	 * 	返回此次面试的队头人员, 不需要面试完毕的人
+	 */
+	@Override
+	public Ivuser getThisQueue(String ivid) {
+		//如果没有此次面试信息!说明服务器重启了,重新创建缓存队列
+		if(CacheManager.getCache(ivid)==null) {  
+			System.out.println("队列不存在, 准备创建队列.");
+			createQueue(ivid,false);
+		}
+		Cache cache = CacheManager.getCache(ivid);  
+		System.out.println("查询的缓存:"+cache);
+		Queue me = (Queue)cache.getValue();   // 获取存在的队列值.
+		System.out.println("num:"+me.getNum());
+		if(me.getNum()>0) {
+			Object mem = me.getFirst();  //获取第一个且不出队
+			Ivmember m = (Ivmember)mem;
+			System.out.println("转换的对象"+m);
+			//通过面试人员关联表查找面试人员信息表
+			System.out.println(userDao.findByOpenid(m.getOpenid()));
+			if(m.getOpenid()==null || m.getOpenid()=="")
+				return null;
+			return userDao.findByOpenid(m.getOpenid());
+		}
+		return null;
+	}
+	
+	/***
+	 *	 完成对头人员面试,并返回操作结果，出队操作
+	 */
+	@Override
+	public String nextOne(String ivid) {
+		if(CacheManager.getCache(ivid)==null) {  
+			System.out.println("队列不存在, 准备创建队列.");
+			createQueue(ivid,false);
+		}
+		Cache cache = CacheManager.getCache(ivid);  
+		System.out.println("查询的缓存:"+cache);
+		Queue me = (Queue)cache.getValue();   // 获取存在的队列值.
+		System.out.println("num:"+me.getNum());
+		if(me.getNum()>0) {
+			Object mem = me.dequeue();//出队 ,  num--
+			Ivmember m = (Ivmember)mem;
+			System.out.println(m);
+			// 改变面试者状态   3面试完成
+			m.setState(3);
+			memberDao.save(m);
+			if(m!=null&&me.getNum()!=0)
+				return "ok";
+		}
+		return "empty";
+	}
+	/**
+	 * 	结束指定面试
+	 */
+	@Override
+	public String finishInterview(String ivid) {
+		Interview i = ivDao.findByIvId(Integer.valueOf(ivid));
+		i.setIvType(2);  // 0(面试未开始)1(面试进行中)2(面试结束)
+		//清除队列
+		if(CacheManager.getCache(ivid)!=null) {
+			Cache cache = CacheManager.getCache(ivid);  
+			Queue me = (Queue)cache.getValue();   
+			me.DestroyQueue();   //清除队列
+			CacheManager.clearOnly(ivid);  //清除缓存
+		}
+		ivDao.save(i);
+		return "ok";
 	}
 }

@@ -49,7 +49,7 @@ public class Queue {
 		num ++;
 		return true;
 	}
-	/**取出头部元素   注意非空判断*/
+	/**取出头部元素,并出队   注意非空判断*/
 	public Object dequeue() {
 		if(isEmpty()){
 			return null;
@@ -59,6 +59,13 @@ public class Queue {
         front=(front+1)%queueList.length;
         num--;
         return o;
+	}
+	/**取出第一个元素,不出队*/
+	public Object getFirst() {
+		if(isEmpty()){
+			return null;
+		}	
+		return queueList[front];
 	}
 	/**获得队列已有元素总数*/
 	public int getNum() {

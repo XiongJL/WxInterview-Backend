@@ -34,7 +34,7 @@ public class CodeController {
 		String param = appid+secrets+code+grant;
 		System.out.println("wxApiParam:"+param);
 		String key = util.get(url+"?"+param);	
-		System.out.println("getCode:"+ key);
+		System.out.println("获取Code:"+ key);
 		JSONObject req = JSONObject.fromObject(key);
 		String session_key = req.getString("session_key");
 		String openid = req.getString("openid");

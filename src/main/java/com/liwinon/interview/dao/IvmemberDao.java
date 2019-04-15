@@ -10,7 +10,10 @@ import com.liwinon.interview.entity.Ivmember;
 public interface IvmemberDao extends JpaRepository<Ivmember, Integer> {
 	//查找参加了这次面试的所有人
 	@Query(value="SELECT i FROM Ivmember i WHERE i.ivId=:ivid ORDER BY i.publishDate ASC")
-	List<Ivmember> findByIvId(int ivid);
+	List<Ivmember> findAllByIvId(int ivid);
+	//查找参加了这次面试的面试未结束的人
+	@Query(value="SELECT i FROM Ivmember i WHERE i.ivId=:ivid AND i.state <> 3 ORDER BY i.publishDate ASC")
+	List<Ivmember> findIngByIvId(int ivid);
 	//查找该人参加且未结束的面试
 	@Query(value="SELECT i FROM Ivmember i WHERE i.openid=:Openid AND (i.state=1 OR i.state=2)")
 	List<Ivmember> findByOpenidWithIVING(String Openid);

@@ -9,6 +9,8 @@ import com.liwinon.interview.entity.Ivuser;
 public interface QrService {
 	//发起一场面试
 	public String startInterview(String session,String startTime,String duringTime,String location);
+	public String startInterviewByWX(String session,String startTime,String duringTime,String location);
+	
 	//参加一场面试
 	public String jionInterview(String ivid,String session);
 	
@@ -20,6 +22,8 @@ public interface QrService {
 	
 	//api , 查询正在进行和尚未开始的面试信息.
 	public List<Interview> getInterview();
+	//api , 查询正在进行和尚未开始的面试每场人数
+	public int[] getInterviewNums();
 	
 	//api ,返回指定面试的队头人员
 	public Ivuser getThisQueue(String ivid);
@@ -29,4 +33,7 @@ public interface QrService {
 	
 	//api, 结束指定面试
 	public String finishInterview(String ivid);
+	
+	//api, 开启指定的面试
+	public String openInterview(String ivid);
 }

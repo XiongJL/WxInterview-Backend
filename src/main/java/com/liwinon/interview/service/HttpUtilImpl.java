@@ -1,16 +1,20 @@
 package com.liwinon.interview.service;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.Buffer;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -29,9 +33,8 @@ import com.liwinon.interview.dao.SessionDao;
 import com.liwinon.interview.entity.Ivuser;
 import com.liwinon.interview.entity.Session;
 
-
 @Service
-public class WXUtilImpl implements WXUtil {
+public class HttpUtilImpl implements HttpUtil {
 	@Autowired
 	private SessionDao sessionDao;
 	@Autowired
@@ -52,7 +55,8 @@ public class WXUtilImpl implements WXUtil {
 			// 设置通用的请求属性
 			connection.setConnectTimeout(3000);
 			connection.setRequestProperty("accept", "*/*");
-			// connection.setRequestProperty("connection", "Keep-Alive"); //Connection:close短链接 ,keep-alive 长链接
+			// connection.setRequestProperty("connection", "Keep-Alive");
+			// //Connection:close短链接 ,keep-alive 长链接
 			connection.setRequestProperty("connection", "close");
 			connection.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
 			// 建立实际的连接
@@ -113,6 +117,12 @@ public class WXUtilImpl implements WXUtil {
 //			conn.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
 			conn.setRequestProperty("Content-type", "application/json; charset=utf-8");
 			conn.setRequestProperty("Accept", "application/json");
+			/**添加Authorization验证*/
+			//String authString = "init1234:87654321";
+			//byte[] authEncBytes = Base64.encodeBase64(authString.getBytes());
+			//String authStringEnc = new String(authEncBytes);
+			//conn.setRequestProperty("Authorization", "Basic " + authStringEnc);
+			/**结束*/
 			// 发送POST请求必须设置如下两行
 			conn.setDoOutput(true);
 			conn.setDoInput(true);
@@ -148,66 +158,97 @@ public class WXUtilImpl implements WXUtil {
 		return result;
 	}
 
+	public BufferedReader bufferPost(String url, String param) {
+		PrintWriter out = null;
+		BufferedReader in = null;
+		String result = "";
+		System.out.println("发出请求前的param：" + param);
+		try {
+			URL realUrl = new URL(url);
+			// 打开和URL之间的连接
+			URLConnection conn = realUrl.openConnection();
+//			// 设置通用的请求属性
+			conn.setRequestProperty("accept", "*/*");
+//			conn.setRequestProperty("connection", "Keep-Alive");
+//			conn.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+			conn.setRequestProperty("Content-type", "application/json; charset=utf-8");
+			conn.setRequestProperty("Accept", "application/json");
+			// 发送POST请求必须设置如下两行
+			conn.setDoOutput(true);
+			conn.setDoInput(true);
+			// 获取URLConnection对象对应的输出流
+			out = new PrintWriter(conn.getOutputStream());
+			// 发送请求参数
+			out.print(param);
+			// flush输出流的缓冲
+			out.flush();
+			// 定义BufferedReader输入流来读取URL的响应
+			in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
+		} catch (Exception e) {
+			System.out.println(e);
+		}
+		return in;
+	}
+
 	/***
 	 * 利用HTTPClient 发送GET 请求
 	 * 
 	 */
-	public String get(String url)
-	      {
-	          String result = null;
-	          CloseableHttpClient httpClient = HttpClients.createDefault();
-	         HttpGet get = new HttpGet(url);
-	         CloseableHttpResponse response = null;
-	         try {
-	             response = httpClient.execute(get);
-	             if(response != null && response.getStatusLine().getStatusCode() == 200)
-	            {
-	                 HttpEntity entity = response.getEntity();
-	                result = entityToString(entity);
-	             }
-	             return result;
-	        } catch (IOException e) {
-	            e.printStackTrace();
-	         }finally {
-	             try {
-	                 httpClient.close();
-	                 if(response != null)
-	                 {
-	                     response.close();
-	                 }
-	             } catch (IOException e) {
-	                 e.printStackTrace();
-	             }
-	         }
-	        return null;
-	     }
+	public String get(String url) {
+		String result = null;
+		CloseableHttpClient httpClient = HttpClients.createDefault();
+		HttpGet get = new HttpGet(url);
+		CloseableHttpResponse response = null;
+		try {
+			response = httpClient.execute(get);
+			if (response != null && response.getStatusLine().getStatusCode() == 200) {
+				HttpEntity entity = response.getEntity();
+				result = entityToString(entity);
+			}
+			return result;
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				httpClient.close();
+				if (response != null) {
+					response.close();
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return null;
+	}
+
 	private String entityToString(HttpEntity entity) throws IOException {
-		          String result = null;
-		          if(entity != null)
-		          {
-		              long lenth = entity.getContentLength();
-		              if(lenth != -1 && lenth < 2048)
-		              {
-		                  result = EntityUtils.toString(entity,"UTF-8");
-		              }else {
-		                 InputStreamReader reader1 = new InputStreamReader(entity.getContent(), "UTF-8");
-		                 CharArrayBuffer buffer = new CharArrayBuffer(2048);
-		                 char[] tmp = new char[1024];
-		                int l;
-		                while((l = reader1.read(tmp)) != -1) {
-		                     buffer.append(tmp, 0, l);
-		                 }
-		                 result = buffer.toString();
-		             }
-		         }
-		         return result;
-		     }
-	
+		String result = null;
+		if (entity != null) {
+			long lenth = entity.getContentLength();
+			if (lenth != -1 && lenth < 2048) {
+				result = EntityUtils.toString(entity, "UTF-8");
+			} else {
+				InputStreamReader reader1 = new InputStreamReader(entity.getContent(), "UTF-8");
+				CharArrayBuffer buffer = new CharArrayBuffer(2048);
+				char[] tmp = new char[1024];
+				int l;
+				while ((l = reader1.read(tmp)) != -1) {
+					buffer.append(tmp, 0, l);
+				}
+				result = buffer.toString();
+			}
+		}
+		return result;
+	}
+
 	/**
 	 * 发送 post请求 用HTTPclient 发送请求 ，解决乱码问题
 	 */
-	public static String post(String json, String URL) {
+	public byte[] post(String URL, String json) {
 		String obj = null;
+		InputStream inputStream = null;
+		Buffer reader = null;
+		byte[] data = null;
 		// 创建默认的httpClient实例.
 		CloseableHttpClient httpclient = HttpClients.createDefault();
 		// 创建httppost
@@ -223,17 +264,14 @@ public class WXUtilImpl implements WXUtil {
 				// 获取相应实体
 				HttpEntity entity = response.getEntity();
 				if (entity != null) {
-					obj = EntityUtils.toString(entity, "UTF-8");
+					inputStream = entity.getContent();
+					data = readInputStream(inputStream);
 				}
-
+				return data;
 			} finally {
 				response.close();
 			}
-		} catch (ClientProtocolException e) {
-			e.printStackTrace();
-		} catch (UnsupportedEncodingException e1) {
-			e1.printStackTrace();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
 			// 关闭连接,释放资源
@@ -243,8 +281,32 @@ public class WXUtilImpl implements WXUtil {
 				e.printStackTrace();
 			}
 		}
-		return obj;
+		return data;
 	}
+	/**
+	 *  将流 保存为数据数组
+	 * @param inStream
+	 * @return
+	 * @throws Exception
+	 */
+	public static byte[] readInputStream(InputStream inStream) throws Exception {
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		// 创建一个Buffer字符串
+		byte[] buffer = new byte[1024];
+		// 每次读取的字符串长度，如果为-1，代表全部读取完毕
+		int len = 0;
+		// 使用一个输入流从buffer里把数据读取出来
+		while ((len = inStream.read(buffer)) != -1) {
+			// 用输出流往buffer里写入数据，中间参数代表从哪个位置开始读，len代表读取的长度
+			outStream.write(buffer, 0, len);
+		}
+		// 关闭输入流
+		inStream.close();
+		// 把outStream里的数据写入内存
+		return outStream.toByteArray();
+	}
+
+	
 
 	/**
 	 * @author XiongJL
@@ -261,7 +323,5 @@ public class WXUtilImpl implements WXUtil {
 			return "0"; // 没有该用户
 		return user.getOpenid(); // 返回用户的 ID
 	}
-
-	
 
 }

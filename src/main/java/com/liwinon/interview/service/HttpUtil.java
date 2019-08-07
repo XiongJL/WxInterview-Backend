@@ -1,8 +1,9 @@
 package com.liwinon.interview.service;
 
+import java.io.BufferedReader;
 import java.util.List;
 
-public interface WXUtil {
+public interface HttpUtil {
 	//发起HTTP  get 请求
 	public String reqGet(String url, String param) ;
 	//通过HTTPClient 发起get请求
@@ -12,7 +13,10 @@ public interface WXUtil {
 	 */
 	public String reqPost(String url, String param);
 	
+	public BufferedReader bufferPost(String url, String param);
+	
 	//获取用户的 openId
 	public String getOpenId(String session_key);
+	public  byte[] post(String json, String URL);
 	
 }

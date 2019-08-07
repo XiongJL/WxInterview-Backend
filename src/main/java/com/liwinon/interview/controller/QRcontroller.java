@@ -28,7 +28,9 @@ public class QRcontroller {
 	@GetMapping(value="/interview/qrCode/create")
 	public String createQrcode(String session,String startTime,String duringTime,String location) {
 		System.out.println(session+" "+startTime+" "+duringTime+" "+location);
-		String qrname = qrcode.startInterview(session, startTime, duringTime,location);
+		//String qrname = qrcode.startInterview(session, startTime, duringTime,location);
+		//通过微信API 生成二维码
+		String qrname = qrcode.startInterviewByWX(session, startTime, duringTime,location);
 		System.out.println("创建二维码返回值为:"+qrname);
 		return qrname;
 	}

@@ -28,6 +28,14 @@ public class InterviewController {
 		return service.getInterview();
 	}
 	/**
+	 * 	获取正在进行的以及尚未开始的面试人数
+	 * @return
+	 */
+	@GetMapping(value="/interview/api/getInterviewNums")
+	public int[] getInterviewNums() {
+		return service.getInterviewNums();
+	}
+	/**
 	 * 	获取指定ivid号的面试信息
 	 * @param ivid
 	 * @return
@@ -61,5 +69,12 @@ public class InterviewController {
 		
 		return service.finishInterview(ivid);
 		
+	}
+	/** 	开启指定的面试 
+	 * @return 
+	 */
+	@GetMapping(value="/interview/api/openInterview/{ivid}")
+	public String openInterview(@PathVariable String ivid) {
+		return service.openInterview(ivid);	
 	}
 }

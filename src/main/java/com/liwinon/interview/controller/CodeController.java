@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.liwinon.interview.entity.Ivuser;
 import com.liwinon.interview.entity.Session;
-import com.liwinon.interview.service.WXUtil;
+import com.liwinon.interview.service.HttpUtil;
 import com.liwinon.interview.dao.IvuserDao;
 import com.liwinon.interview.dao.SessionDao;
 
@@ -21,7 +21,7 @@ public class CodeController {
 	@Autowired
 	private IvuserDao userDao;
 	@Autowired
-	private WXUtil util;
+	private HttpUtil util;
 	
 	/**
 	 * 小程序加载时获取openid 和 session_key
